@@ -1,0 +1,26 @@
+name: CodeWarden self-check
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  check-golden-dataset:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run CodeWarden against the Golden Dataset sample repo
+        uses: ./
+        with:
+          repo-path: eval/golden_dataset/repo
+          rules-path: rules/examples/example_rules.yaml
+          fail-on: never # this repo's golden dataset has known violations by design
+          groq-api-key: ${{ secrets.GROQ_API_KEY }}
+
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: codewarden-report
+          path: codewarden-report.json

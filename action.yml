@@ -1,0 +1,51 @@
+name: "CodeWarden"
+description: "Multi-agent architectural compliance checker over Tree-sitter ASTs, ChromaDB retrieval, and a LangGraph agent pipeline."
+branding:
+  icon: "shield"
+  color: "purple"
+
+inputs:
+  repo-path:
+    description: "Path to the directory to check, relative to the workflow's checkout."
+    required: false
+    default: "."
+  rules-path:
+    description: "Path to a CodeWarden rules YAML file."
+    required: true
+  fail-on:
+    description: "Minimum severity that fails the action: error, warning, info, or never."
+    required: false
+    default: "error"
+  groq-api-key:
+    description: "Groq API key (pass via a GitHub Actions secret, never a plain value)."
+    required: true
+
+outputs:
+  report-path:
+    description: "Path to the JSON violation report written by this run."
+    value: ${{ steps.run-codewarden.outputs.report-path }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
+    - name: Install CodeWarden
+      shell: bash
+      run: pip install "${{ github.action_path }}"
+
+    - name: Run CodeWarden
+      id: run-codewarden
+      shell: bash
+      env:
+        GROQ_API_KEY: ${{ inputs.groq-api-key }}
+      run: |
+        codewarden check "${{ inputs.repo-path }}" \
+          --rules "${{ inputs.rules-path }}" \
+          --format json \
+          --fail-on "${{ inputs.fail-on }}" \
+          | tee codewarden-report.json
+        echo "report-path=codewarden-report.json" >> "$GITHUB_OUTPUT"
