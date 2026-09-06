@@ -1,0 +1,15 @@
+venv/
+__pycache__/
+*.pyc
+.env
+chroma_db/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.DS_Store
+.vscode/
+.idea/
+ASSUMPTIONS.md
+DECISIONS.md
