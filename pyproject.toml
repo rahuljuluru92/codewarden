@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "codewarden"
+version = "0.0.1"
+description = "Multi-agent architectural compliance checker over Tree-sitter ASTs."
+requires-python = ">=3.11"
+
+[tool.setuptools.packages.find]
+include = ["codewarden*"]
