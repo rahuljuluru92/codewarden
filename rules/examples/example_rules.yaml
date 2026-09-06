@@ -1,0 +1,85 @@
+rules:
+  - id: no-controller-db-access
+    name: Controllers must not access the database directly
+    description: >
+      Files under any `controllers/` or `api/` directory must not import
+      the ORM/database layer directly. Data access must go through a
+      service or repository layer.
+    rationale: >
+      Direct DB access from controllers couples HTTP handling to storage
+      details, makes controllers hard to test, and has caused several
+      past incidents where a controller bypassed a service-layer
+      permission check that the repository layer enforced.
+    severity: error
+    languages: [python]
+    scope:
+      include: ["**/controllers/**/*.py", "**/api/**/*.py"]
+    params:
+      rule_type: import_restriction
+      from_module_glob: "**/controllers/**/*.py"
+      forbidden_import_globs: ["**/db/**", "**/models/orm/**"]
+
+  - id: no-service-to-api-import
+    name: Services must not import from the API layer
+    description: >
+      Modules under `services/` must not import anything from `api/` or
+      `controllers/`. Dependencies must flow inward (api -> services),
+      never outward (services -> api).
+    rationale: >
+      Allowing services to import controllers creates circular
+      dependencies and means business logic ends up depending on HTTP
+      framework details it shouldn't know about.
+    severity: error
+    languages: [python, typescript]
+    scope:
+      include: ["**/services/**/*"]
+    params:
+      rule_type: layering
+      source_layer_glob: "**/services/**/*"
+      target_layer_glob: "**/{api,controllers}/**/*"
+      direction: forbidden
+
+  - id: no-console-log-in-production-code
+    name: No console.log in non-test TypeScript source
+    description: >
+      TypeScript files outside of `tests/` or `*.test.ts` must not use
+      `console.log` for debugging output; use the project logger instead.
+    rationale: >
+      Stray console.log calls have leaked internal state into browser
+      consoles in production before; a structured logger can be
+      filtered/redacted, console.log cannot.
+    severity: warning
+    languages: [typescript]
+    scope:
+      include: ["**/*.ts"]
+      exclude: ["**/tests/**", "**/*.test.ts"]
+    params:
+      rule_type: semantic_check
+      check_prompt: >
+        Does this file call console.log (or console.debug/console.info)
+        anywhere outside of a test file? Flag each call site.
+      applies_to_glob: "**/*.ts"
+
+  - id: no-business-logic-in-controllers
+    name: Controllers must stay thin
+    description: >
+      Controller/handler functions should only parse input, call a
+      service function, and format the response — not contain business
+      rules, calculations, or multi-step orchestration logic themselves.
+    rationale: >
+      This isn't expressible as a simple import or pattern check — it
+      requires judgment about what counts as "business logic" versus
+      "request handling," so it's delegated to an LLM agent reasoning
+      over the function body.
+    severity: warning
+    languages: [python, typescript]
+    scope:
+      include: ["**/controllers/**/*", "**/api/**/*"]
+    params:
+      rule_type: semantic_check
+      check_prompt: >
+        Does this controller/handler function contain non-trivial
+        business logic (conditionals on domain state, calculations,
+        multi-step orchestration) rather than delegating to a service
+        function? Explain what logic should be extracted, if any.
+      applies_to_glob: "**/{controllers,api}/**/*"
