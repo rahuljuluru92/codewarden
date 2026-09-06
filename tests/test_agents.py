@@ -72,6 +72,23 @@ def test_planner_resolves_semantic_tasks_via_retrieval(parsed_files, index, rule
     tasks = build_initial_tasks(ruleset, parsed_files, index)
     semantic_tasks = [t for t in tasks if t.rule.id == "no-business-logic-in-controllers"]
     assert len(semantic_tasks) > 0
+
+
+def test_planner_semantic_tasks_cover_every_in_scope_file(parsed_files, index, ruleset):
+    """Regression test for the Stage 6 retrieval-starvation bug: a single
+    global top-N query across all in-scope files let some files' functions
+    get crowded out entirely by other files' chunks that merely embedded
+    closer to the check_prompt (see DECISIONS.md, Stage 6 iteration #1).
+    Every in-scope file must get at least one task planned."""
+    rule = next(r for r in ruleset.rules if r.id == "no-business-logic-in-controllers")
+    tasks = build_initial_tasks(ruleset, parsed_files, index)
+    semantic_tasks = [t for t in tasks if t.rule.id == rule.id]
+    covered_files = {t.file_path for t in semantic_tasks}
+    expected_files = {
+        "app/controllers/user_controller.py",
+        "app/controllers/user_controller.ts",
+    }
+    assert expected_files.issubset(covered_files)
     assert all(t.chunk_id is not None for t in semantic_tasks)
     assert all(t.file_path.startswith("app/controllers/") for t in semantic_tasks)
 
