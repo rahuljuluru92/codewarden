@@ -30,21 +30,29 @@ def _plan_structural_tasks(rule: Rule, parsed_files: dict[str, ParsedFile]) -> l
     return [AnalysisTask(rule=rule, file_path=path) for path in _files_in_scope(rule, parsed_files)]
 
 
-def _plan_semantic_tasks(rule: Rule, parsed_files: dict[str, ParsedFile], index: CodeIndex) -> list[AnalysisTask]:
-    in_scope_paths = _files_in_scope(rule, parsed_files)
-    if not in_scope_paths:
-        return []
+PER_FILE_QUERY_SIZE = 20  # comfortably above the function count of any one file
 
-    results = index.query(
-        rule.params.check_prompt,
-        n_results=max(len(in_scope_paths) * 2, 5),
-        where={"path": {"$in": in_scope_paths}},
-    )
-    return [
-        AnalysisTask(rule=rule, file_path=r.metadata["path"], chunk_id=r.id, chunk_text=r.text)
-        for r in results
-        if r.metadata.get("kind") == "function"
-    ]
+
+def _plan_semantic_tasks(rule: Rule, parsed_files: dict[str, ParsedFile], index: CodeIndex) -> list[AnalysisTask]:
+    """One retrieval query per in-scope file, not one global query across all
+    of them. A single shared top-N budget let some files' genuinely relevant
+    functions get crowded out by other files' chunks that merely embedded
+    closer to the check_prompt text (confirmed in DECISIONS.md, Stage 6:
+    two real violations were missed this way, not because the LLM judged
+    them incorrectly, but because they were never sent to it at all)."""
+    tasks: list[AnalysisTask] = []
+    for path in _files_in_scope(rule, parsed_files):
+        results = index.query(
+            rule.params.check_prompt,
+            n_results=PER_FILE_QUERY_SIZE,
+            where={"path": path},
+        )
+        tasks.extend(
+            AnalysisTask(rule=rule, file_path=r.metadata["path"], chunk_id=r.id, chunk_text=r.text)
+            for r in results
+            if r.metadata.get("kind") == "function"
+        )
+    return tasks
 
 
 def build_initial_tasks(ruleset: RuleSet, parsed_files: dict[str, ParsedFile], index: CodeIndex) -> list[AnalysisTask]:
