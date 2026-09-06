@@ -2,7 +2,7 @@ name: CodeWarden self-check
 
 on:
   push:
-    branches: [main]
+    branches: [main, feature/github-action]
   workflow_dispatch: {}
 
 jobs:
