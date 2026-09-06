@@ -1,0 +1,42 @@
+# Ground truth for the Golden Dataset (see DECISIONS.md / ASSUMPTIONS.md,
+# Stage 5, for how this dataset was constructed: synthetic files with
+# deliberately planted violations and deliberately clean counterexamples,
+# hand-labeled by the person writing the fixtures).
+#
+# File paths are relative to eval/golden_dataset/repo/.
+# `true` = this file genuinely violates this rule; `false` = it does not.
+# Only (rule, file) pairs the rule's own scope/language would actually
+# apply to are listed — the harness cross-checks this against the rule's
+# scope match at eval time and errors if a pair is missing.
+
+rules:
+  no-controller-db-access:
+    controllers/user_controller.py: false
+    controllers/order_controller.py: true
+    controllers/payment_controller.py: false
+    controllers/report_controller.py: true
+
+  no-service-to-api-import:
+    services/pricing_service.py: true
+    services/inventory_service.py: false
+    services/notification_service.py: false
+    services/emailService.ts: true
+    services/cacheService.ts: false
+
+  no-console-log-in-production-code:
+    controllers/authController.ts: true
+    controllers/profileController.ts: false
+    controllers/sessionController.ts: false
+    controllers/adminController.ts: true
+    services/emailService.ts: false
+    services/cacheService.ts: false
+
+  no-business-logic-in-controllers:
+    controllers/user_controller.py: true
+    controllers/order_controller.py: false
+    controllers/payment_controller.py: false
+    controllers/report_controller.py: true
+    controllers/authController.ts: false
+    controllers/profileController.ts: true
+    controllers/sessionController.ts: false
+    controllers/adminController.ts: true
