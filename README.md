@@ -191,7 +191,7 @@ To use it from Claude Desktop, add an entry to `claude_desktop_config.json`:
 
 Note that MCP clients spawn the server with their own environment, not your shell's, so the API key needs to be set explicitly in the client config rather than just exported in a terminal.
 
-The server has been verified at the protocol level: a real MCP client (the official `mcp` Python SDK's own stdio client) was used to list its tools and call `check_repository` against the Golden Dataset repo, and it returned a correct structured report.
+The server has been verified two ways: at the protocol level, using the official `mcp` Python SDK's own stdio client to list its tools and call `check_repository` against the Golden Dataset repo, and against a real MCP client, Claude Desktop, where the `codewarden` tool was found and successfully invoked from an actual chat session.
 
 ## Project layout
 
